@@ -1,0 +1,41 @@
+cabal-version:      3.0
+name:               simple-grep
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            ISC
+license-file:       LICENSE
+author:             tuftman-0
+-- maintainer:
+-- copyright:
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+-- extra-source-files:
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:  NotSoSimpleGenericParser
+    -- other-modules:
+    -- other-extensions:
+    build-depends:    base ^>=4.19.2.0
+                    , bytestring
+                    , text
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable simple-grep
+    import:           warnings
+    main-is:          Main.hs
+    -- other-modules:
+    -- other-extensions:
+    build-depends:    base ^>=4.19.2.0
+                    , simple-grep
+                    , bytestring
+                    , text
+
+
+    hs-source-dirs:   app
+    default-language: Haskell2010
