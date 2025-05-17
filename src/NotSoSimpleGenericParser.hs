@@ -99,10 +99,12 @@ import Data.Foldable (asum)
 import Data.Kind (Type)
 import qualified Data.List as List
 import Data.String (IsString)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BSC
-import Data.Text (Text)
 import qualified Data.Text as T
+import Data.ByteString (ByteString)
+import Data.Text (Text)
+import Data.Maybe (fromMaybe)
+
 
 type ParseError = String
 
@@ -116,8 +118,7 @@ pattern Failure err = Left err
 
 data ParserState s = ParserState
   { inputS :: s         -- The remaining input stream
-  , pos   :: Int       -- The current position in the input
-  -- , isCut :: Bool
+  , pos    :: Int       -- The current position in the input
   } deriving (Show, Eq)
 
 
@@ -293,6 +294,11 @@ ifP condP thenP elseP = do
         Just _  -> thenP
         Nothing -> elseP
 
+-- ifP' :: Parser s a -> Parser s b -> Parser s b -> Parser s b
+-- ifP' condP thenP elseP = try condP >>= either (const elseP) (const thenP)
+-- ifP' condP thenP elseP = optional condP >>= maybe elseP (const thenP)
+-- ifP' condP thenP elseP = fromMaybe elseP <$> (optional condP *> thenP)
+
 -- *TODO* do something like ultra debug mode or something
 ifPdebug :: Parser s a -> Parser s b -> Parser s b -> Parser s b
 ifPdebug p thenP elseP = do
@@ -301,6 +307,7 @@ ifPdebug p thenP elseP = do
         Just _  -> thenP `wErrorMod` ("ifP (then):" ++)
         Nothing -> elseP `wErrorMod` ("ifP (else):" ++)
 
+-- aaaaaab
 -- construct for chaining parser ifP: Cond (p1) (p2) is like if (p1) succeeds then parser (p2)
 data Branch s a
     = forall c.
@@ -350,7 +357,7 @@ endOfInput :: (Stream s) => Parser s ()
 endOfInput = peekNot anyToken `wError` "Expected end of input"
 
 -- Match a token that satisfies a predicate, also takes a string representing what was expected
-satisfy :: (Stream s) => (Elem s -> Bool) -> String -> Parser s (Elem s)
+satisfy :: (Stream s) => (Elem s -> Bool) -> ParseError -> Parser s (Elem s)
 satisfy pred expected = try $ do
     t <- anyToken `wErrorMod` \msg -> msg ++ ", Expected " ++ expected
     if pred t
@@ -479,9 +486,7 @@ boundedThen lo hi p suffix = do
         tryAt [] = fail "suffix never matched"
         tryAt ((i, st) : rest) =
             rollback st
-                *> ( (take i results,)
-                        <$> suffix
-                            <|> tryAt rest
+                *> ( (take i results,) <$> suffix <|> tryAt rest
                    )
     tryAt (reverse valid)
 
